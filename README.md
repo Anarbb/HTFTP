@@ -1,5 +1,5 @@
 # HTFTP
-[HTFTP banner](https://raw.githubusercontent.com/Anarbb/HTFTP/master/images/banner.png)
+![HTFTP banner](https://raw.githubusercontent.com/Anarbb/HTFTP/master/images/banner.png)
 A lightweight web server and FTP server for Windows
 
 - Just run it using python or use the compiled app that runs natively on Windows
