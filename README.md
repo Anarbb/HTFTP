@@ -10,3 +10,9 @@ A lightweight web server and FTP server for Windows
 
 # FTP
 - The login to your FTP server will be your Windows username and password, this is because it's safer.
+
+
+
+
+
+PS : to run your http server on port 80 disable the http service in windows 'net stop http'
