@@ -26,12 +26,11 @@ def get_ip():
 
 
 def run_web_server(ADDR, PORT, DIRE):
-    web_dir = DIRE
     Handler = http.server.SimpleHTTPRequestHandler
     try:
         with socketserver.TCPServer((ADDR, PORT), Handler) as httpd:
             print(f"[-] Serving at http://{ADDR}:{PORT}/")
-            print(f"[-] Web local directory: {web_dir}")
+            print(f"[-] Web local directory: {DIRE}")
             httpd.serve_forever()
     except OSError:
         print('HTTP port already in use')
