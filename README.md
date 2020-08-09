@@ -1,4 +1,3 @@
-# HTFTP
 ![HTFTP banner](https://raw.githubusercontent.com/Anarbb/HTFTP/master/images/banner.png)
 A lightweight web server and FTP server for Windows
 
