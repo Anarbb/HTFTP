@@ -13,7 +13,6 @@ from pyftpdlib.servers import FTPServer
 from pyftpdlib.authorizers import WindowsAuthorizer
 
 
-
 def get_ip():
     s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     try:
@@ -112,7 +111,7 @@ your FTP login credentials are the same as your Windows login credentials (for s
 if you have no password set there won't be a password on the FTP so it's reccomended to have one.
 
 - Unix and Linux systems FTP support is in the works
-- PHP support is in the works\n
+- PHP support is in the works
     ''')
     run()
 
