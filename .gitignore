@@ -2,3 +2,4 @@
 web
 ftp_logs
 venv
+__pycache__
