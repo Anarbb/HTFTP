@@ -3,133 +3,142 @@ import socketserver
 import os
 import sys
 import socket
+import threading
 import logging
 import threading
-import platform
-from time import sleep
 from datetime import datetime
 from pyftpdlib.handlers import FTPHandler
 from pyftpdlib.servers import FTPServer
 from pyftpdlib.authorizers import WindowsAuthorizer
 
 
-def get_ip():
-    s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    try:
-        s.connect(('10.255.255.255', 1))
-        IP = s.getsockname()[0]
-    except Exception:
-        IP = '127.0.0.1'
-    finally:
-        s.close()
-    return IP
-
-
-def run_web_server(ADDR, PORT, DIRE):
-    Handler = http.server.SimpleHTTPRequestHandler
-    try:
-        with socketserver.TCPServer((ADDR, PORT), Handler) as httpd:
-            print(f"[-] Serving at http://{ADDR}:{PORT}/")
-            print(f"[-] Web local directory: {DIRE}")
-            httpd.serve_forever()
-    except OSError:
-        print('HTTP port already in use')
-
-
-def run_ftp_server(ADDR, PORT):
-    logging_path = os.path.join(os.path.dirname(__file__), 'ftp_logs')
-    now = datetime.now()
-    current_time_file = now.strftime("%Y%m%d%H%M%S")
-    current_time_logging = now.strftime("%Y-%m-%d-%H-%M-%S")
-    handler = FTPHandler
-    authorizer = WindowsAuthorizer()
-    handler.authorizer = authorizer
-    handler.log_prefix = f'[{current_time_logging}] %(username)s - %(remote_ip)s'
-    if os.path.exists(logging_path):
-        logging.basicConfig(
-            filename=logging_path + f"/log{current_time_file}.txt", level=logging.INFO)
-    else:
-        os.makedirs(logging_path)
-        logging.basicConfig(
-            filename=logging_path + f"/log{current_time_file}.txt", level=logging.INFO)
-    sleep(8)
-    print(f'[-] Serving FTP server at {ADDR}:{PORT}')
-    server = FTPServer((ADDR, PORT), handler)
-    server.serve_forever()
-
-
-def http_only(ADDR):
-    try:
-        HTTP_PORT = int(input('HTTP port > '))
-        if HTTP_PORT > 65535:
-            print("Invalid port number.")
-            HTTP_PORT = None
-            quit()
-        else:
-            pass
-    except ValueError:
-        print("Invalid port number.")
-        quit()
-    HTTP_DIRE = input('HTTP working directory > ')
-    HTTP_DIRE = os.path.join(os.path.dirname(__file__), HTTP_DIRE)
-    if os.path.exists(HTTP_DIRE):
-        os.chdir(HTTP_DIRE)
-        pass
-    else:
+class Server:
+    # Configuration for the server
+    def __init__(self, http_port, http_dir, ftp_port):
+        self.http_port = http_port
+        self.http_dir = http_dir
+        self.ftp_port = ftp_port
+        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         try:
-            os.makedirs(HTTP_DIRE)
-            os.chdir(HTTP_DIRE)
-        except OSError:
-            print("Invalid folder name")
-            quit()
-    http_thread = threading.Thread(
-        target=run_web_server, args=(ADDR, HTTP_PORT, HTTP_DIRE))
-    http_thread.start()
+            s.connect(('10.255.255.255', 1))
+            ip = s.getsockname()[0]
+        except Exception:
+            ip = '127.0.0.1'
+        finally:
+            s.close()
+        self.ip = ip
 
-
-def ftp_only(ADDR):
-    try:
-        FTP_PORT = int(input('FTP port > '))
-        if FTP_PORT > 65535:
+    def run_http(self):
+        # HTTP simple server
+        try:
+            if self.http_port > 65535:
+                print("Invalid port number.")
+                quit()
+            else:
+                pass
+        except ValueError:
             print("Invalid port number.")
             quit()
-        else:
+        http_dir = os.path.join(os.path.dirname(__file__), self.http_dir)
+        if os.path.exists(http_dir):
+            os.chdir(http_dir)
             pass
-    except ValueError:
-        print("Invalid port number.")
-        quit()
-    ftp_thread = threading.Thread(target=run_ftp_server, args=(ADDR, FTP_PORT))
-    ftp_thread.start()
+        else:
+            try:
+                os.makedirs(http_dir)
+                os.chdir(http_dir)
+            except OSError:
+                print("Invalid folder name")
+                quit()
+        Handler = http.server.SimpleHTTPRequestHandler
+        try:
+            with socketserver.TCPServer((self.ip, self.http_port), Handler) as httpd:
+                print(
+                    f"[-] HTTP server serving at http://{self.ip}:{self.http_port}/")
+                print(f"[-] Web local directory: {self.http_dir}")
+                httpd.serve_forever()
+        except OSError:
+            print('HTTP port already in use')
+
+    def run_ftp(self):
+        try:
+            if self.ftp_port > 65535:
+                print("Invalid port number.")
+                quit()
+            else:
+                pass
+        except ValueError:
+            print("Invalid port number.")
+            quit()
+        logging_path = os.path.join(os.path.dirname(__file__), 'ftp_logs')
+        now = datetime.now()
+        current_time_file = now.strftime("%Y%m%d%H%M%S")
+        current_time_logging = now.strftime("%Y-%m-%d-%H-%M-%S")
+        authorizer = WindowsAuthorizer()
+        handler = FTPHandler
+        handler.authorizer = authorizer
+        handler.log_prefix = f'[{current_time_logging}] %(username)s - %(remote_ip)s'
+        if os.path.exists(logging_path):
+            logging.basicConfig(
+                filename=logging_path + f"/log{current_time_file}.log", level=logging.INFO)
+        else:
+            os.makedirs(logging_path)
+            logging.basicConfig(
+                filename=logging_path + f"/log{current_time_file}.log", level=logging.INFO)
+        server = FTPServer((self.ip, self.ftp_port), handler)
+        print(f"[-] FTP server serving at {self.ip}:{self.ftp_port}")
+        server.serve_forever()
 
 
-def guid():
-    print('''
-Pretty meh web server mostly made for home use like a local webserver on an old machine to host movies and such
-it pretty simple to use only enter your http working directory, and the FTP is global as in will show all the files on that user's personal folder
-your FTP login credentials are the same as your Windows login credentials (for security reasons)
-if you have no password set there won't be a password on the FTP so it's reccomended to have one.
-
-- Unix and Linux systems FTP support is in the works
-- PHP support is in the works
-    ''')
-    run()
+# s.run_http()
+# s.run_ftp()
+# http_thread = threading.Thread(target=s.run_http)
+# ftp_thread = threading.Thread(target=s.run_ftp)
+# http_thread.start()
+# ftp_thread.start()
 
 
 def run():
-    ADDR = get_ip()
-    print("Type 'help' for info\n")
-    print('1) HTTP Only\n2) FTP Only\n3) HTTP and FTP')
-    user_in = input('> ').lower()
-    if user_in == '1':
-        http_only(ADDR)
-    elif user_in == '2':
-        ftp_only(ADDR)
-    elif user_in == '3':
-        ftp_only(ADDR)
-        http_only(ADDR)
+    print("""
+1 - HTTP and FTP
+2 - HTTP only
+3 - FTP only
+    """)
+    # i didnt want to go back and make arguments for earch function so this would do, im starving
+    user_input = int(input('> '))
+    if user_input == 1:
+        http_port = int(input('[=] HTTP port: '))
+        http_dir = input('[=] HTTP directory: ')
+        ftp_port = int(input('[=] FTP port: '))
+        s = Server(http_port, http_dir, ftp_port)
+        http_thread = threading.Thread(target=s.run_http)
+        ftp_thread = threading.Thread(target=s.run_ftp)
+        http_thread.start()
+        ftp_thread.start()
+    elif user_input == 2:
+        http_port = int(input('[=] HTTP port: '))
+        http_dir = input('[=] HTTP directory: ')
+        s = Server(http_port, http_dir, 21)
+        http_thread = threading.Thread(target=s.run_http)
+        http_thread.start()
+    elif user_input == 3:
+        ftp_port = int(input('[=] FTP port: '))
+        s = Server(80, 'placeholder', ftp_port)
+        ftp_thread = threading.Thread(target=s.run_ftp)
+        ftp_thread.start()
     else:
-        guid()
+        print('''
+Pretty meh web server mostly made for home use for a local webserver on an old machine to host movies and such
+it pretty simple to use only enter your http working directory and port, and the FTP is global as in will show all the files on that user's personal folder
+your FTP login credentials are the same as your Windows login credentials (for security reasons)
+if you have no password set there won't be a password on the FTP so it's reccomended to have one.
+
+- Darwin and Linux systems FTP support is in the works
+- PHP support is in the works
+    ''')
+        if __name__ == "__main__":
+            run()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     run()
