@@ -9,7 +9,7 @@ A lightweight web server and FTP server for Windows
 - Add support for .PHP files
 
 # FTP
-- The login to your FTP server will be your Windows username and password, this is because it's safer.
+- The login to your FTP server will be your Windows username and password, this is because im lazy.
 
 
 
